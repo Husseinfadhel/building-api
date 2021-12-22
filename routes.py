@@ -146,7 +146,10 @@ async def post_office_details(office_id, renter: str, date_of_receipt: str, date
     async with in_transaction() as conn:
         new = OfficeDetails(office_id=office_id, renter=renter, date_of_receipt=date_of_receipt,
                             date_of_claiming=date_of_claiming, amount=amount, notes=notes)
+
         await new.save(using_db=conn)
+        notify = Notifications(office_details_id=new.id)
+        await notify.save(using_db=conn)
     return {
         "renter": new.renter,
         "success": True
