@@ -92,3 +92,150 @@ async def post_office(name: str):
         "name": new.name,
         "success": True
     }
+
+
+# GET `/offices/<office_id>`
+# - Get office details from the database.
+# - Request Arguments: Page Number.
+# - Returns: List of date of receipt, date of claiming, amount and notes.
+# Example Response `{
+#     "office_details": [
+#         {
+#             "id": 1,
+#             "renter": "علي",
+#             "date_of_receipt": "1",
+#             "date_of_claiming": "1",
+#             "amount": 1,
+#             "notes": "1",
+#         }
+#     ],
+#     "success": true
+# }`
+@fast_router.get('/offices/{office_id}')
+async def office_details(office_id):
+    off = await OfficeDetails.filter(office_id=office_id).all()
+    all_offices = []
+    for f in off:
+        json_details = {"id": f.id, "renter": f.renter, "date_of_receipt": f.date_of_receipt,
+                        "date_of_claiming": f.date_of_claiming, "amount": f.amount, "notes": f.notes}
+        all_offices.append(json_details)
+    return {
+        "office_details": all_offices,
+        "success": True
+    }
+
+
+# POST `/offices/<office_id>`
+# - Add office details to the database.
+# - Request Body: renter, date of receipt, date of claiming, amount and notes.
+# - Returns: renter of office.
+# Example Request Payload `{
+#     "renter": "علي",
+#     "date_of_receipt": "1",
+#     "date_of_claiming": "1",
+#     "amount": 1,
+#     "notes": "1",
+# }`
+# Example Response `{
+#     "renter": "علي",
+#     "success": true
+# }`
+@fast_router.post('/offices/{office_id}')
+async def post_office_details(office_id, renter: str, date_of_receipt: str, date_of_claiming: str, amount: float,
+                              notes: str):
+    async with in_transaction() as conn:
+        new = OfficeDetails(office_id=office_id, renter=renter, date_of_receipt=date_of_receipt,
+                            date_of_claiming=date_of_claiming, amount=amount, notes=notes)
+        await new.save(using_db=conn)
+    return {
+        "renter": new.renter,
+        "success": True
+    }
+
+
+# GET `/expenses`
+# - Get expenses from the database.
+# - Request Arguments: Page Number.
+# - Returns: List of date of receipt, date of claiming, amount and notes.
+# Example Response `{
+#     "expenses": [
+#         {
+#             "id": 1,
+#             "voucher_number": 1,
+#             "name": "علي"
+#             "type": "اصلاحيات",
+#             "amount": 1,
+#         }
+#     ],
+#     "success": true
+# }`
+@fast_router.get('/expenses')
+async def get_expenses():
+    return {
+        "expenses": await Expenses.all(),
+        "success": True
+    }
+
+
+# POST `/expenses`
+# - Add an expense to the database.
+# - Request Body: renter, date of receipt, date of claiming, amount and notes.
+# - Returns: renter of office.
+# Example Request Payload `{
+#     "voucher_number": 1,
+#     "name": "علي"
+#     "type": "اصلاحيات",
+#     "amount": 1,
+# }`
+# Example Response `{
+#     "voucher_number": 12,
+#     "success": true
+# }`
+@fast_router.post('/expenses')
+async def post_expenses(voucher_number: int, name: str, expense_type: str,
+                        amount: float, date: str):
+    async with in_transaction() as conn:
+        new = Expenses(voucher_number=voucher_number, name=name, type=expense_type,
+                       amount=amount, date=date)
+        await new.save(using_db=conn)
+    return {
+        "voucher_number": new.voucher_number,
+        "success": True
+    }
+
+
+# GET `/notifications`
+# - Get notifications about date of claiming from the database.
+# - Request Arguments: None
+# - Returns: id, date_of_claiming and seen.
+# Example Response `{
+#     "notifications": [
+#         {
+#             "id": 1,
+#             "date_of_claiming": "1",
+#             "seen": 0
+#         }
+#     ],
+#     "success": true
+# }`
+@fast_router.get('/notifications')
+async def get_notify():
+    return {
+        "notifications": await Notifications.all(),
+        "success": True
+    }
+
+
+# PATCH `/notifications/<notification_id>`
+# - Change the notification seen state to 1 in the database.
+# - Request Arguments: notification_id
+# - Returns: None.
+# Example Response `{
+#     "success": true
+# }`
+@fast_router.patch('/notifications/{notification_id}')
+async def patch_notification(notification_id):
+    await Notifications.filter(id=notification_id).update(seen=1)
+    return {
+        "success": True
+    }

@@ -22,7 +22,7 @@ class Offices(Model):
 
 class OfficeDetails(Model):
     id = fields.IntField(pk=True)
-    office_id = fields.ForeignKeyField('models.Offices')
+    office = fields.ForeignKeyField('models.Offices')
     renter = fields.TextField()
     date_of_receipt = fields.DateField()
     date_of_claiming = fields.DateField()
@@ -43,3 +43,9 @@ class Expenses(Model):
 
     class Meta:
         table = "expenses"
+
+
+class Notifications(Model):
+    id = fields.IntField(pk=True)
+    office_details = fields.ForeignKeyField('models.OfficeDetails')
+    seen = fields.IntField(default=0)
