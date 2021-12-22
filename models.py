@@ -39,6 +39,7 @@ class Expenses(Model):
     name = fields.TextField()
     type = fields.TextField()
     amount = fields.FloatField()
+    date = fields.DateField()
 
     class Meta:
         table = "expenses"
