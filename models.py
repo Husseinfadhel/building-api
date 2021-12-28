@@ -7,6 +7,7 @@ class Users(Model):
     name = fields.TextField()
     username = fields.TextField()
     password = fields.TextField()
+    building = fields.TextField()
 
     class Meta:
         table = "users"
@@ -35,7 +36,6 @@ class OfficeDetails(Model):
 
 class Expenses(Model):
     id = fields.IntField(pk=True)
-    voucher_number = fields.IntField()
     name = fields.TextField()
     type = fields.TextField()
     amount = fields.FloatField()

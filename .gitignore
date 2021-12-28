@@ -1,3 +1,9 @@
 venv
 db.db
 .idea
+
+building
+dist
+build
+__pycache__
+db.sqlite3

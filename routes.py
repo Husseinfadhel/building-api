@@ -2,8 +2,65 @@ from fastapi import APIRouter
 from models import *
 import datetime
 from tortoise.transactions import in_transaction
+from random import randrange
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 fast_router = APIRouter()
+
+
+# register a new user
+@fast_router.post('/register')
+async def register(username: str, password: str, name: str, building: str):
+    try:    
+        async with in_transaction() as conn:
+            new = Users(username=username, password=password, name=name, building=building)
+            await new.save(using_db=conn)
+            return {
+                "success": True,
+            }
+    except:
+        raise StarletteHTTPException(500, "internal Server Error")
+
+
+# login route
+@fast_router.post('/login')
+async def login(username: str, password: str):
+    query = await Users.filter(username=username).first()
+    if query.username == username and query.password == password:
+        return {
+            "success": True,
+            "token": randrange(999999999, 1000000000000000),
+            "id": query.id,
+            "name": query.name,
+            "username": query.username,
+            "password": query.password,
+            "building": query.building
+        }
+    else: 
+        raise StarletteHTTPException(401, "Unauthorized")
+
+
+# to get users
+@fast_router.get('/users')
+async def get_users():
+    try:
+        return {
+            "users": await Users.all(),
+        }
+    except:
+        raise StarletteHTTPException(404, "Not Found")
+
+
+# to modify user
+@fast_router.patch('/user')
+async def patch_user(user_id: int, name: str, username: str, password: str, building: str):
+    try:
+        await Users.filter(id=user_id).update(name=name, username=username, password=password, building=building)
+        return {
+            "success": True
+        }
+    except:
+        raise StarletteHTTPException(500, "internal Server Error")
 
 
 # GET `/main-admin` - Get all offices, total expenses, yearly expenses, total income, yearly income, total amount,
@@ -93,6 +150,13 @@ async def post_office(name: str):
         "success": True
     }
 
+@fast_router.patch('/offices')
+async def patch_office(office_id: int, name: str):
+    await Offices.filter(id=office_id).update(name=name)
+    return {
+        "name": name,
+        "success": True
+    }
 
 # GET `/offices/<office_id>`
 # - Get office details from the database.
@@ -112,7 +176,7 @@ async def post_office(name: str):
 #     "success": true
 # }`
 @fast_router.get('/offices/{office_id}')
-async def office_details(office_id):
+async def get_office_details(office_id):
     off = await OfficeDetails.filter(office_id=office_id).all()
     all_offices = []
     for f in off:
@@ -155,6 +219,15 @@ async def post_office_details(office_id, renter: str, date_of_receipt: str, date
         "success": True
     }
 
+@fast_router.patch('/offices/{office_id}')
+async def patch_office_details(office_details_id: int, office_id, renter: str, date_of_receipt: str, date_of_claiming: str, amount: float,
+                              notes: str):
+    await OfficeDetails.filter(id=office_details_id).update(renter=renter, date_of_receipt=date_of_receipt, date_of_claiming=date_of_claiming, amount=amount, notes=notes)
+    await Notifications.filter(office_details_id=office_details_id).update(seen=0)
+    return {
+        "renter": renter,
+        "success": True
+    }
 
 # GET `/expenses`
 # - Get expenses from the database.
@@ -195,14 +268,14 @@ async def get_expenses():
 #     "success": true
 # }`
 @fast_router.post('/expenses')
-async def post_expenses(voucher_number: int, name: str, expense_type: str,
+async def post_expenses( name: str, expense_type: str,
                         amount: float, date: str):
     async with in_transaction() as conn:
-        new = Expenses(voucher_number=voucher_number, name=name, type=expense_type,
+        new = Expenses( name=name, type=expense_type,
                        amount=amount, date=date)
         await new.save(using_db=conn)
     return {
-        "voucher_number": new.voucher_number,
+        "id": new.id,
         "success": True
     }
 
@@ -223,8 +296,15 @@ async def post_expenses(voucher_number: int, name: str, expense_type: str,
 # }`
 @fast_router.get('/notifications')
 async def get_notify():
+    notifications = await Notifications.all().prefetch_related('office_details')
+    notifications_list = [(n.id, n.seen, n.office_details.id, n.office_details.renter, n.office_details.date_of_receipt, n.office_details.date_of_claiming, n.office_details.amount, n.office_details.notes, n.office_details.office_id) for n in notifications]
+    notifications_jsons = []
+    for record in notifications_list:
+        office = await Offices.filter(id= record[8]).first()
+        notifications = {'id': record[0], 'seen': record[1], 'office_details_id': record[2], 'renter': record[3], 'date_of_receipt': record[4], 'date_of_claiming': record[5], 'amount': record[6], 'notes': record[7], 'office_name': office.name}
+        notifications_jsons.append(notifications)
     return {
-        "notifications": await Notifications.all(),
+        "notifications": notifications_jsons,
         "success": True
     }
 
