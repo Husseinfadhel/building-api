@@ -26,17 +26,18 @@ async def register(username: str, password: str, name: str, building: str):
 @fast_router.post('/login')
 async def login(username: str, password: str):
     query = await Users.filter(username=username).first()
-    if query.username == username and query.password == password:
-        return {
-            "success": True,
-            "token": randrange(999999999, 1000000000000000),
-            "id": query.id,
-            "name": query.name,
-            "username": query.username,
-            "password": query.password,
-            "building": query.building
-        }
-    else: 
+    try:
+        if query.username == username and query.password == password:
+            return {
+                "success": True,
+                "token": randrange(999999999, 1000000000000000),
+                "id": query.id,
+                "name": query.name,
+                "username": query.username,
+                "password": query.password,
+                "building": query.building
+            }
+    except: 
         raise StarletteHTTPException(401, "Unauthorized")
 
 

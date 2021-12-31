@@ -2,6 +2,8 @@ from tortoise.contrib.fastapi import register_tortoise
 from fastapi import FastAPI
 from routes import fast_router
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 def create_app() -> FastAPI:
@@ -27,6 +29,11 @@ def create_app() -> FastAPI:
         add_exception_handlers=True,
     )
     register_views(app=app)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def my_exception_handler(request, exception):
+        return PlainTextResponse(str(exception.detail), status_code=exception.status_code)
+
     return app
 
 
