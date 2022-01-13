@@ -1,9 +1,11 @@
+import signal
 from fastapi import APIRouter
 from models import *
 import datetime
 from tortoise.transactions import in_transaction
 from random import randrange
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import os
 
 fast_router = APIRouter()
 
@@ -121,8 +123,17 @@ async def main_admin():
 # }`
 @fast_router.get('/offices')
 async def get_offices():
+    offices = await Offices.all().order_by("name")
+    all_offices = []
+    for office in offices:
+        off = await OfficeDetails.filter(office_id=office.id).order_by("-renter").first()
+        if off == None:
+            json_details = {"id": office.id, "name": office.name}
+        else:
+            json_details = {"id": office.id, "name": office.name, "renter": off.renter,}
+        all_offices.append(json_details)
     return {
-        "offices": await Offices.all(),
+        "offices": all_offices,
         "success": True
     }
 
@@ -280,6 +291,13 @@ async def post_expenses( name: str, expense_type: str,
         "success": True
     }
 
+@fast_router.patch('/expenses/{expense_id}')
+async def patch_expenses( expense_id, name: str, expense_type: str,
+                        amount: float, date: str):
+    await Expenses.filter(id=expense_id).update(name=name, type=expense_type, amount=amount, date=date)
+    return {
+        "success": True
+    }
 
 # GET `/notifications`
 # - Get notifications about date of claiming from the database.
@@ -323,3 +341,10 @@ async def patch_notification(notification_id):
     return {
         "success": True
     }
+
+
+@fast_router.get('/shutdown')
+def shut():
+    pid = os.getpid()
+    print(pid)
+    os.kill(pid, signal.CTRL_C_EVENT)
