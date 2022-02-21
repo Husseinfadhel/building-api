@@ -342,6 +342,26 @@ async def patch_notification(notification_id):
         "success": True
     }
 
+@fast_router.delete('/offices')
+async def delete_offices(office_id: int):
+    await Offices.filter(id=office_id).delete()
+    return {
+        "success": True
+    }
+
+@fast_router.delete('/offices/{office_id}')
+async def delete_office_details(office_details_id: int):
+    await OfficeDetails.filter(id=office_details_id).delete()
+    return {
+        "success": True
+    }
+    
+@fast_router.delete('/expenses/{expense_id}')
+async def delete_expenses(expense_id):
+    await Expenses.filter(id=expense_id).delete()
+    return {
+        "success": True
+    }
 
 @fast_router.get('/shutdown')
 def shut():
